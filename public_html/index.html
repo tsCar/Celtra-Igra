@@ -6,11 +6,30 @@ and open the template in the editor.
 -->
 <html>
     <head>
-        <title>TODO supply a title</title>
+        <title>Greatest game</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script type="text/javascript" src="source/main.js"></script>
+        <link rel="stylesheet" type="text/css" href="css.css">
     </head>
     <body>
-        <div>sth</div>
+        <style type="text/css">
+            #warning-message { display: none; }
+            @media only screen and (orientation:portrait){
+                #wrapper { display:none; }
+                #warning-message { display:block; }
+            }
+            @media only screen and (orientation:landscape){
+                #warning-message { display:none; }
+            }
+        </style>
+
+        <div id="wrapper">
+            <canvas id="canvas" width="480" height="320" style="border:1px solid #000000;"></canvas>
+        </div>
+        <div id="warning-message">
+            only viewable in landscape mode
+        </div>
+        
     </body>
 </html>
