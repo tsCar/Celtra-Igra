@@ -5,6 +5,7 @@ window.onload = function() {
     let ctx = canvas.getContext("2d");
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
+    let tekst=  document.getElementById("tu");
 
     let width = canvas.width ;
     let height = canvas.height;
@@ -21,16 +22,21 @@ window.onload = function() {
     background.src = "slicice/pozadina.jpg";
     ctx.drawImage(background, 0, 0, background.width, background.height, 0, 0, width, height);
 
-window.addEventListener('devicemotion', function(event) {
-alert(event.acceleration.x)
-    if(event.acceleration.x>5)
-        dx=2;
-    else if(event.acceleration.x<-5)
-        dx=-2;
-    else dx=0;
-   }, false);
+//    window.addEventListener('devicemotion', function(event) {
+//        alert(event.accelerationIncludingGravity.x)
 
-    update();
+//    }, false);
+
+    window.ondevicemotion = function(event) {  
+        let nagib = Math.round(event.accelerationIncludingGravity.y*10) / 10;
+        if(nagib>1)
+            dx=2;
+        else if(nagib<-1)
+            dx=-2;
+        else dx=0;
+  
+    };
+        update();
 
     function update() {
 //        ctx.drawImage(background, 0, 0, background.width, background.height, 0, 0, width, height);
