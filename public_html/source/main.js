@@ -8,11 +8,15 @@ window.onload = function() {
     let width = canvas.width  = screen.width;
     let height = canvas.height = screen.height;
 
-
-    var ikseviZaKvadrate=[Math.floor(width*0.9),Math.floor(width*0.30), Math.floor(width*0.8),Math.floor(width*0.350), Math.floor(width*0.7),Math.floor(width*0.200),Math.floor(width*0.3)];
-    var ipsiloniZaKvadrate=[Math.floor(height*0.9), Math.floor(height*0.4), Math.floor(height*0.7),Math.floor(height*0.200),Math.floor(height*0.350),Math.floor(height*0.500),Math.floor(height*0.85)];
-    var visineZaKvadrate=[20,20,20,20,20,20,10];
-    var sirineZaKvadrate=[150,100,100,200,250,50,250];    
+    var visineZaPlatforme=[20,20,20,20,20,20,10];
+    var sirineZaPlatforme=[150,100,110,200,250,50,250]; 
+    var ikseviZaPlatforme=[Math.floor(width*0.7),Math.floor(width*0.30), Math.floor(width*0.8),Math.floor(width*0), Math.floor(width*0.7),Math.floor(width*0.200),Math.floor(width*0.15)];
+    var ipsiloniZaPlatforme=[Math.floor(height-visineZaPlatforme[0]-1), Math.floor(height*0.45), Math.floor(height*0.7),Math.floor(height*0.3),Math.floor(height*0.350),Math.floor(height*0.500),Math.floor(height*0.75)];
+   
+    var okomiti=[2,5];
+    var okomitiSmjerovi=[1,1];
+    var vodoravni=[0,3,4,6];
+    var vodoravniSmjerovi=[1,1,1,1];
 //igrac
     var igracX = 150;
     var igracY = 20;
@@ -49,9 +53,9 @@ window.onload = function() {
             else igracDx=0;  
         };
     function naPodlozi(){
-        var indeks=ipsiloniZaKvadrate.indexOf(Math.ceil(igracY+visinaIgraca));
+        var indeks=ipsiloniZaPlatforme.indexOf(Math.ceil(igracY+visinaIgraca));
         if (indeks>=0){ 
-            if (igracX+sirinaIgraca>=ikseviZaKvadrate[indeks] && igracX<=ikseviZaKvadrate[indeks]+sirineZaKvadrate[indeks]) return true;
+            if (igracX+sirinaIgraca>=ikseviZaPlatforme[indeks] && igracX<=ikseviZaPlatforme[indeks]+sirineZaPlatforme[indeks]) return true;
         }
         else return false;
     }
@@ -70,8 +74,8 @@ window.onload = function() {
     function nacrtaj(){
         ctx.clearRect(0, 0, width,height);
         ctx.beginPath();
-        for (let i=0;i<ikseviZaKvadrate.length;i++){
-            ctx.rect(ikseviZaKvadrate[i],ipsiloniZaKvadrate[i],sirineZaKvadrate[i],visineZaKvadrate[i]);
+        for (let i=0;i<ikseviZaPlatforme.length;i++){
+            ctx.rect(ikseviZaPlatforme[i],ipsiloniZaPlatforme[i],sirineZaPlatforme[i],visineZaPlatforme[i]);
         }
         ctx.fillStyle = "#0099ee";
         ctx.fill();
@@ -80,7 +84,6 @@ window.onload = function() {
         ctx.font = "30px Arial";
         ctx.fillText(String(igracX),igracX+40,igracY+30);
         ctx.fillText(String(igracY),igracX,igracY);
-
     }
     function azuriraj() {
         //igrac
@@ -120,12 +123,39 @@ window.onload = function() {
             location.reload();
         }
         //je li me duh pojeo
-        if(naDuhuSam===false){ //ako sam na duhu, ne moram provjeravat
-            if(duhPojeo()){
-                alert('game over');
-                location.reload();
+//        if(naDuhuSam===false){ //ako sam na duhu, ne moram provjeravat
+//            if(duhPojeo()){
+//                alert('game over');
+//                location.reload();
+//            }
+//        } 
+        //platforme
+            //vodoravne
+        for (let i=0;i<vodoravni.length;i++){
+            let indeks=vodoravni[i];
+            let mozeUsmjeru;
+            if(vodoravniSmjerovi[i]===1){
+                let mozeDesno=true;
+                let tmp=ikseviZaPlatforme.indexOf(ikseviZaPlatforme[indeks]+sirineZaPlatforme[indeks]+1);
+                if(tmp>=0)
+                    if(ipsiloniZaPlatforme[tmp]+visineZaPlatforme[tmp]>=ipsiloniZaPlatforme[indeks]&&ipsiloniZaPlatforme[tmp]+visineZaPlatforme[tmp]<=ipsiloniZaPlatforme[indeks]+visineZaPlatforme[indeks])
+                        mozeDesno=false;
+                if(ikseviZaPlatforme[indeks]+sirineZaPlatforme[indeks]<width&&mozeDesno)mozeUsmjeru=true;
+                else mozeUsmjeru=false;
             }
-        } 
+            else {
+                let mozeLijevo=true;
+                let tmp=ikseviZaPlatforme.indexOf(ikseviZaPlatforme[indeks]-1);
+                if(tmp>=0)
+                    if(ipsiloniZaPlatforme[tmp]+visineZaPlatforme[tmp]>=ipsiloniZaPlatforme[indeks]&&ipsiloniZaPlatforme[tmp]+visineZaPlatforme[tmp]<=ipsiloniZaPlatforme[indeks]+visineZaPlatforme[indeks])
+                        mozeLijevo=false;
+                if(ikseviZaPlatforme[indeks]>0&&mozeLijevo)mozeUsmjeru=true;
+                else mozeUsmjeru=false;
+            };
+            if( mozeUsmjeru) ikseviZaPlatforme[indeks]+=vodoravniSmjerovi[i];  //ako može kamo želi, pomakni ga, ako ne, promijeni smjer i ne miči          
+            else vodoravniSmjerovi[i]=-vodoravniSmjerovi[i];
+        }
+        
         //crtanje
         nacrtaj();
         requestAnimationFrame(azuriraj);
