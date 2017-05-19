@@ -1,5 +1,7 @@
 window.onload = function() {
 //boost
+//ToDo: sličicca za portrait mode
+    window.scrollTo(0, 1);
     var boostZaSkokTrajeJos=0;
     var dostupanBoostZaSkok=2;
     var boostZaBrzinuTrajeJos=0;
@@ -13,14 +15,21 @@ window.onload = function() {
 //canvas
     let canvas = document.getElementById("canvas");
     var ctx = canvas.getContext("2d");
-    let sirinaCanvasa = canvas.width  = screen.width;
-    let visinaCanvasa = canvas.height = screen.height;
+    if(screen.width>screen.height){ 
+        var sirinaCanvasa = canvas.width  = screen.width;
+        var visinaCanvasa = canvas.height = screen.height;
+    }
+    else {
+        var sirinaCanvasa = canvas.width  = screen.height;
+        var visinaCanvasa = canvas.height = screen.width;
+    }    
+    var wrapper=document.getElementById("wrapper");
 //gumbi
     let gumbZaSkok=document.getElementById("jump");    
     let gumbZaBoostSkok=document.getElementById("boostJump");
     let gumbZaBoostBrzina=document.getElementById("boostSpeed");
     let gumbZaSkokIzNiceg=document.getElementById("skokIzNiceg");
-    let hideA=document.getElementById("hideA");
+    var hideA=document.getElementById("hideA");
     var gumbPocni = document.getElementById("start");
     gumbPocni.ontouchstart= vrtiIgru;
     var gumbPomoc = document.getElementById("pomoc");
@@ -30,7 +39,6 @@ window.onload = function() {
     gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
     gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
     gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
-    postaviGumbeZaMeni();
     ctx.font="15px Arial";
 
 //platforme
@@ -71,7 +79,9 @@ window.onload = function() {
         kadarX : 0,
         kadarY : 0, 
         tickCount : 0,
-        ticksPerFrame : 8
+        ticksPerFrame : 8,
+        idiLijevo:false,
+        idiDesno:false
     };
     var igrac=new Image();
     igrac.src = "slicice/brodic.png";
@@ -97,6 +107,11 @@ window.onload = function() {
     var zvjezdica=new Image();
     zvjezdica.src = "slicice/zvjezdica.png";
     var rezultat=0;
+    var topScore= document.getElementById("top");
+    let topScoreValue=getCookie('rezultat');
+    if (topScoreValue!=='') topScore.innerText='Top Score: '+topScoreValue;
+    else topScore.innerText='Top Score: 0';
+
     var Zvjezdica={
         prozirnost:1,
         prozirnostD:-0.01,
@@ -104,15 +119,18 @@ window.onload = function() {
         Y:111
     };
     //postavke
-    var zvuk=false;
-    var gyro=true;
+    var zvuk;
+    if (getCookie('zvuk')==='upaljen')zvuk=true;
+    else zvuk=false;
+    var gyro;
+    if (getCookie('gyro')==='ugasen')gyro=false;
+    else gyro=true;    
     var mrtav=false;
+    postaviGumbeZaMeni();
 
     function vrtiIgru(){
-        //sakrij nepotrebna gumbe
         makniGumbeZaMeni();
         postaviGumbeZaIgru();
-        
         if(!mrtav)requestAnimationFrame(azuriraj);
         function animirajZvjezdicu(){
            Zvjezdica.prozirnost+=Zvjezdica.prozirnostD;
@@ -164,13 +182,45 @@ window.onload = function() {
         }
         if(gyro)window.ondevicemotion = function(event) {  
                 let nagib = Math.floor(event.accelerationIncludingGravity.y*10) / 10;
-                if(nagib>1) Igrac.Dx=1;
-                else if(nagib<-1)
-                    Igrac.Dx=-1;
-                else Igrac.Dx=0;
+                if(nagib>1) Igrac.idiDesno=true;
+                else if(nagib<-1) Igrac.idiLijevo=true;
+                else {
+                    Igrac.idiDesno=false;
+                    Igrac.idiLijevo=false;
+                }
             };
-            else //napravi strelice, pomakni bonuse, napravi upravljanje strelicama
-                ;
+        else {
+            //pomakni gumbe za bonus
+            gumbZaSkokIzNiceg.style.bottom='40vh';
+            gumbZaBoostBrzina.style.bottom='15vh';
+            gumbZaBoostSkok.style.bottom='15vh';
+            //napravi strelice
+            var kontrolaLijevo = document.createElement('button');
+            wrapper.appendChild(kontrolaLijevo);
+            postaviGumb(kontrolaLijevo,1,90);
+            kontrolaLijevo.style.backgroundImage="url('slicice/left.png')";
+            kontrolaLijevo.style.display = 'block';
+            kontrolaLijevo.innerText='left';
+            kontrolaLijevo.style.textIndent='-2222px';
+            kontrolaLijevo.style.width='10%';
+            kontrolaLijevo.style.height='10%';
+            kontrolaLijevo.style.backgroundSize= '100% 100%';
+            kontrolaLijevo.ontouchstart=function(){Igrac.idiLijevo=true;};
+            kontrolaLijevo.ontouchend=function(){Igrac.idiLijevo=false;};
+            
+            var kontrolaDesno = document.createElement('button');
+            wrapper.appendChild(kontrolaDesno);
+            postaviGumb(kontrolaDesno,20,90);
+            kontrolaDesno.style.backgroundImage='url("slicice/right.png")';
+            kontrolaDesno.style.display = 'block';
+            kontrolaDesno.innerText='right';
+            kontrolaDesno.style.textIndent='-2222px';
+            kontrolaDesno.style.width='10%';
+            kontrolaDesno.style.height='10%';
+            kontrolaDesno.style.backgroundSize= '100% 100%';
+            kontrolaDesno.ontouchstart=function(){Igrac.idiDesno=true;};
+            kontrolaDesno.ontouchend=function(){Igrac.idiDesno=false;};
+        };
         function naPodlozi(){
             for (let indeks=0;indeks<ipsiloniZaPlatforme.length;indeks++){
                 if (ipsiloniZaPlatforme[indeks]===Math.ceil(Igrac.Y+Igrac.visina)||ipsiloniZaPlatforme[indeks]===Math.floor(Igrac.Y+Igrac.visina))
@@ -234,6 +284,7 @@ window.onload = function() {
             ctx.beginPath();
             if (mrtav){
                 ctx.drawImage(duhLijevo,0,0);
+                ctx.fillText('Game over',sirinaCanvasa*0.7,visinaCanvasa*0.3);
                 setTimeout(function() {location.reload();}, 1500);
             }
             else{
@@ -327,6 +378,7 @@ window.onload = function() {
         }
         function pomakniIgraca(){
             let naDuhuSam=naDuhu();
+            //pomak po y
             if (naLiftu()) Igrac.Dy=-1;
             else if ((skoroNaLiftu()||naPodlozi())&&naDuhuSam===false)Igrac.Dy=0;
             else if (naDuhuSam) Igrac.Dy=-Math.abs(Duh.Dy);
@@ -337,10 +389,16 @@ window.onload = function() {
                 else Igrac.Dy=-3;
                 Igrac.skok--;
             }
-            if (boostZaBrzinuTrajeJos>0)Igrac.Dx*=2;
             Igrac.Y+=Igrac.Dy;
-            if (Igrac.X+Igrac.Dx>0 && Igrac.X+Igrac.Dx<sirinaCanvasa) Igrac.X+=Igrac.Dx;
-
+            //pomak po x
+            if (Igrac.X+Igrac.Dx>0 && Igrac.X+Igrac.Dx<sirinaCanvasa) {
+                if(Igrac.idiDesno)Igrac.Dx=1;
+                else if (Igrac.idiLijevo)Igrac.Dx=-1;
+                else Igrac.Dx=0;
+            }
+            else Igrac.Dx=0;
+            if (boostZaBrzinuTrajeJos>0)Igrac.Dx*=2;
+            Igrac.X+=Igrac.Dx;
             return naDuhuSam;
         }
         function pomakniDuha(){
@@ -385,7 +443,12 @@ window.onload = function() {
             //duh
             pomakniDuha();
             //provjere za game over
-            mrtav=provjere(naDuhuSam);      
+            mrtav=provjere(naDuhuSam);   
+            if(mrtav){
+                let cookieZaRezultat=getCookie('rezultat');
+                if(cookieZaRezultat ==='')setCookie('rezultat',String(rezultat));
+                else if( rezultat>parseInt(cookieZaRezultat)) setCookie('rezultat',String(rezultat));
+            }
             //zvjezdice i bonusi
             jeZvjezdicaSkupljena();
             if (rezultat%2000===1){ //duh se ubrzava sa bodovima
@@ -398,22 +461,21 @@ window.onload = function() {
             //crtanje
             nacrtaj();
             if(!mrtav)requestAnimationFrame(azuriraj);
-
         }
-        //main
     }
     function pomoc(){
-        let svePostavke=[];
+        let svaPomoc=[];
         let count=0;
-        svePostavke[0]=new Image();
-        svePostavke[0].src = "slicice/skok.png";
-        svePostavke[1]=new Image();
-        svePostavke[1].src = "slicice/RCW49.jpg";
+        //ToDo: napravit i dodat prave sličice
+        svaPomoc[0]=new Image();
+        svaPomoc[0].src = "slicice/skok.png";
+        svaPomoc[1]=new Image();
+        svaPomoc[1].src = "slicice/RCW49.jpg";
         makniGumbeZaMeni();
         window.addEventListener("touchstart",funkcijaZaEventHandler);
         function funkcijaZaEventHandler(){ 
-            if(count<svePostavke.length){
-                ctx.drawImage(svePostavke[count],sirinaCanvasa*0.1,visinaCanvasa*0.1,sirinaCanvasa*0.8,visinaCanvasa*0.8);
+            if(count<svaPomoc.length){
+                ctx.drawImage(svaPomoc[count],sirinaCanvasa*0.1,visinaCanvasa*0.1,sirinaCanvasa*0.8,visinaCanvasa*0.8);
                 ctx.fillText('tap to continue',sirinaCanvasa*0.1+20,visinaCanvasa*0.1+20);
                 count++;
             }
@@ -422,16 +484,99 @@ window.onload = function() {
                 window.removeEventListener("touchstart",funkcijaZaEventHandler);
                 postaviGumbeZaMeni();
             }
-
         }
     };
     function otvoriPostavke(){
-        alert('?');
-        //pogasi sve druge gumbe
+        makniGumbeZaMeni();
+        ctx.drawImage(igrac,sirinaCanvasa*0.1,visinaCanvasa*0.1,sirinaCanvasa*0.8,visinaCanvasa*0.8);//ToDo prava slika
         //napravi gumbe za zvuk i kontrole
-        //sound on, sound off, kontrole gyro, kontrole strelice - izabrani ima pozadinu u boji
-        //dodaj im lstenere
-        //napravi gumb za zatvorit postavke koji pobriše sve nove gumbe(i sebe) i upali gumbe za meni.
+        var gumbZvukOn = document.createElement('button');
+        wrapper.appendChild(gumbZvukOn);
+        postaviGumb(gumbZvukOn,10,30);
+        gumbZvukOn.innerText='Sound ON';
+        gumbZvukOn.style.display = 'block';
+        gumbZvukOn.style.width='40%';
+        gumbZvukOn.style.textAlign='center';
+        gumbZvukOn.ontouchstart=function(){
+            zvuk=true;
+            obojajPozadinu();
+        };
+        
+        var gumbZvukOff = document.createElement('button');
+        wrapper.appendChild(gumbZvukOff);
+        postaviGumb(gumbZvukOff,50,30);
+        gumbZvukOff.innerText='Sound OFF';
+        gumbZvukOff.style.display = 'block';
+        gumbZvukOff.style.width='40%';
+        gumbZvukOff.style.textAlign='center';
+        gumbZvukOff.ontouchstart=function(){
+            zvuk=false;
+            obojajPozadinu();
+        } ;  
+        
+        var gumbGyroOn = document.createElement('button');
+        wrapper.appendChild(gumbGyroOn);
+        postaviGumb(gumbGyroOn,10,60);
+        gumbGyroOn.innerText='Controls: Gyro';
+        gumbGyroOn.style.display = 'block';
+        gumbGyroOn.style.width='40%';
+        gumbGyroOn.style.textAlign='center';
+        gumbGyroOn.ontouchstart=function(){
+            gyro=true;
+            obojajPozadinu();
+        };
+        
+        
+        var gumbGyroOff = document.createElement('button');
+        wrapper.appendChild(gumbGyroOff);
+        postaviGumb(gumbGyroOff,50,60);
+        gumbGyroOff.innerText='Controls: Arrows';
+        gumbGyroOff.style.display = 'block';
+        gumbGyroOff.style.width='40%';
+        gumbGyroOff.style.textAlign='center';
+        gumbGyroOff.ontouchstart=function(){
+            gyro=false;
+            obojajPozadinu();
+        } ;  
+        
+        var gumbZatvoriPostavke = document.createElement('button');
+        wrapper.appendChild(gumbZatvoriPostavke);
+        postaviGumb(gumbZatvoriPostavke,80,80);
+        gumbZatvoriPostavke.innerText='Done';
+        gumbZatvoriPostavke.style.display = 'block';
+        gumbZatvoriPostavke.ontouchstart=function(){
+            gumbZvukOn.parentNode.removeChild(gumbZvukOn);
+            gumbZvukOff.parentNode.removeChild(gumbZvukOff);
+            gumbGyroOn.parentNode.removeChild(gumbGyroOn);
+            gumbGyroOff.parentNode.removeChild(gumbGyroOff);
+            gumbZatvoriPostavke.parentNode.removeChild(gumbZatvoriPostavke);
+            ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
+            postaviGumbeZaMeni();
+            if (zvuk) setCookie('zvuk','upaljen',30);
+            else setCookie('zvuk','ugasen',30);
+            if (gyro) setCookie('gyro','upaljen',30);
+            else setCookie('gyro','ugasen',30);
+        } ;  
+        //obojaj pozadinu
+        obojajPozadinu();
+        function obojajPozadinu(){
+            if(zvuk){
+                gumbZvukOn.style.backgroundColor = "rgba(6, 181, 43  ,0.75)";//zelena
+                gumbZvukOff.style.backgroundColor = "rgba(181, 19, 6  ,0.75)";//crvena
+            }
+            else {
+                gumbZvukOn.style.backgroundColor = "rgba(181, 19, 6  ,0.75)";//crvena
+                gumbZvukOff.style.backgroundColor = "rgba(6, 181, 43  ,0.75)";//zelena
+            }
+            if(gyro){
+                gumbGyroOn.style.backgroundColor = "rgba(6, 181, 43  ,0.75)";//zelena
+                gumbGyroOff.style.backgroundColor = "rgba(181, 19, 6  ,0.75)";//crvena
+            }
+            else {
+                gumbGyroOn.style.backgroundColor = "rgba(181, 19, 6  ,0.75)";//crvena
+                gumbGyroOff.style.backgroundColor = "rgba(6, 181, 43  ,0.75)";//zelena
+            }
+        }
     }
     function postaviGumbeZaIgru(){
         gumbZaSkok.style.display = 'block';
@@ -444,6 +589,7 @@ window.onload = function() {
         gumbPomoc.style.display = 'block';
         hideA.style.display = 'block';
         gumbPostavke.style.display = 'block';
+        topScore.style.display = 'block';
     }
     function makniGumbeZaIgru(){
         gumbZaSkok.style.display = 'none';
@@ -456,5 +602,31 @@ window.onload = function() {
         gumbPomoc.style.display = 'none';
         hideA.style.display = 'none';
         gumbPostavke.style.display = 'none';
+        topScore.style.display = 'none';
+    }
+    function postaviGumb(gumb, x, y) {
+            gumb.style.position = "absolute";
+            gumb.style.left = x+'%';
+            gumb.style.top = y+'%';
+        }      
+    function setCookie(cname, cvalue, exdays) {
+        var d = new Date();
+        d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+        var expires = "expires="+d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    }
+    function getCookie(cname) {
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) === ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) === 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
     }
 };
