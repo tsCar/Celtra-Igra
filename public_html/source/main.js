@@ -25,15 +25,53 @@ window.onload = function() {
         var visinaCanvasa = canvas.height = screen.width;
     }    
     var wrapper=document.getElementById("wrapper");
-//gumbi
+    //postavke
+    var zvuk;
+    if (getCookie('zvuk')==='upaljen')zvuk=true;
+    else zvuk=false;
+    var gyro;
+    if (getCookie('gyro')==='ugasen')gyro=false;
+    else gyro=true;   
+    var brzinaDuha;
+    if (getCookie('brzinaDuha')==='medium')brzinaDuha=0.35;
+    else if (getCookie('brzinaDuha')==='hard')brzinaDuha=0.5;
+    else brzinaDuha=0.2;
+    //muzika
+    var muzikaZaMenu = new Audio('zvukici/menu.wav');
+    var muzikaZaIgru = new Audio('zvukici/igra.mp3');
+    var maliSkok = new Audio('zvukici/maliSkok.mp3');
+    var velikiSkok = new Audio('zvukici/velikiSkok.mp3');
+    var boostSound = new Audio('zvukici/boost.mp3');
+    var zaKraj = new Audio('zvukici/zaKraj.mp3');
+    var skupi = new Audio('zvukici/skupi.mp3');
+    //gumbi
     let gumbZaSkok=document.getElementById("jump");    
     let gumbZaBoostSkok=document.getElementById("boostJump");
     let gumbZaBoostBrzina=document.getElementById("boostSpeed");
     let gumbZaSkokIzNiceg=document.getElementById("skokIzNiceg");
+    let gumbZaZvuk=document.getElementById("zvuk");
+    gumbZaZvuk.ontouchstart=function(){
+        if (zvuk){
+            zvuk=false;
+            muzikaZaIgru.pause();
+            setCookie('zvuk','ugasen',30);
+            gumbZaZvuk.style.backgroundImage="url('slicice/noSound.png')";
+        }
+        else { 
+            zvuk=true;
+            muzikaZaIgru.play();
+            setCookie('zvuk','upaljen',30);
+            gumbZaZvuk.style.backgroundImage="url('slicice/sound.png')"; //ToDo nać bolju sličicu
+        }
+    };
     var hideA=document.getElementById("hideA");
     var gumbPocni = document.getElementById("start");
     gumbPocni.ontouchstart=function(){
         Igrac.mrtav=false;
+        if(zvuk) {
+            muzikaZaMenu.pause()
+            muzikaZaIgru.play();
+        }
         vrtiIgru();
     };
     var gumbPomoc = document.getElementById("pomoc");
@@ -50,17 +88,8 @@ window.onload = function() {
         pozadine[i]=new Image;
         pozadine[i].src='slicice/pozadina'.concat(String(i),'.png');
     }
-//postavke
-    var zvuk;
-    if (getCookie('zvuk')==='upaljen')zvuk=true;
-    else zvuk=false;
-    var gyro;
-    if (getCookie('gyro')==='ugasen')gyro=false;
-    else gyro=true;   
-    var brzinaDuha;
-    if (getCookie('brzinaDuha')==='medium')brzinaDuha=0.35;
-    else if (getCookie('brzinaDuha')==='hard')brzinaDuha=0.5;
-    else brzinaDuha=0.2;
+    var efektZaPozadinu=0;
+
 //platforme
     var platforme=new Image();
     platforme.src='slicice/platforme.png';
@@ -133,9 +162,8 @@ window.onload = function() {
         X:111,
         Y:111
     };
-
+    
     postaviGumbeZaMeni();
-
     function vrtiIgru(){
 //Izbor slike za duha
         var duhDesno=new Image();
@@ -159,17 +187,18 @@ window.onload = function() {
                 Zvjezdica.Y=Math.random()*0.9*visinaCanvasa;
                 Zvjezdica.X=Math.random()*0.9*sirinaCanvasa;
                 rezultat+=100;
+                if(zvuk)skupi.play();
            }; 
         }
         function jeBonusSkupljen(){
-            if(Math.abs((Igrac.Y+Igrac.polaVisine)-(Duh.Y-Igrac.visina+Igrac.polaVisine))<(2*Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.polaSirine)-(Duh.X+Igrac.polaSirine))<(2*Igrac.sirina)/3){ //bonus je iste veličine kao i duh
+            if(Math.abs((Igrac.Y+Igrac.polaVisine)-(Duh.Y-Igrac.visina+Igrac.polaVisine))<(2*Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.polaSirine)-(Duh.X+Igrac.polaSirine))<(2*Igrac.sirina)/3){ //bonus je iste veličine kao i igrac
                 bonusAktivan=false;
                 let sreca=Math.random();
-                if(sreca<0.05){
+                if(sreca<0.1){
                     dostupanSkokIzNiceg++;
                     gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
                 }
-                else if(sreca<47.5){
+                else if(sreca<0.55){
                     dostupanBoostZaBrzinu++;
                     gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
                 }
@@ -267,10 +296,18 @@ window.onload = function() {
         gumbZaSkok.ontouchstart=function(){
             if (Igrac.skok<=0)
                 if(naDuhu()||naPodlozi()||skoroNaLiftu()) {
+                    if(zvuk){
+                        if(boostZaSkokTrajeJos>0)velikiSkok.play();
+                        else maliSkok.play();
+                    }
                     if(boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
                     else Igrac.skok=visinaCanvasa*0.1;
                 }
                 else if(mozeSkokIzNiceg){
+                    if(zvuk){
+                        if(boostZaSkokTrajeJos>0)velikiSkok.play();
+                        else maliSkok.play();
+                    }
                     mozeSkokIzNiceg=false;
                     if(boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
                     else Igrac.skok=visinaCanvasa*0.1;                
@@ -281,6 +318,7 @@ window.onload = function() {
                 dostupanBoostZaSkok--;
                 boostZaSkokTrajeJos=600;
                 gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
+                if(zvuk)boostSound.play();
             }
         };
         gumbZaBoostBrzina.ontouchstart=function(){
@@ -288,6 +326,7 @@ window.onload = function() {
                 dostupanBoostZaBrzinu--;
                 boostZaBrzinuTrajeJos=600;
                 gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
+                if(zvuk)boostSound.play();
             }
         };
         gumbZaSkokIzNiceg.ontouchstart=function(){
@@ -295,17 +334,26 @@ window.onload = function() {
                 dostupanSkokIzNiceg--;
                 mozeSkokIzNiceg=true;
                 gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
+                if(zvuk)boostSound.play();
             }        
         };
         function nacrtaj(){
             ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
             ctx.beginPath();
-            if (rezultat%2000<7)ctx.drawImage(pozadine[rezultat%2000],0,0,sirinaCanvasa,visinaCanvasa);
-            else if (rezultat%2000<14)ctx.drawImage(pozadine[13-rezultat%2000],0,0,sirinaCanvasa,visinaCanvasa);//unatrag od 6 do 0
+            if(efektZaPozadinu<7){
+                ctx.drawImage(pozadine[efektZaPozadinu],0,0,sirinaCanvasa,visinaCanvasa);
+                efektZaPozadinu++;
+            }
+            else if (efektZaPozadinu<14){
+                ctx.drawImage(pozadine[13-efektZaPozadinu],0,0,sirinaCanvasa,visinaCanvasa);//unatrag od 6 do 0
+                efektZaPozadinu++;
+            }
+          
             if (Igrac.mrtav){
                 ctx.drawImage(duhLijevo,0,0);
                 ctx.fillText('Game over',sirinaCanvasa*0.7,visinaCanvasa*0.3);
-                setTimeout(function() {location.reload();}, 1500);
+                setTimeout(function() {location.reload();}, 2000);
+                if(zvuk)zaKraj.play();
             }
             else{
                 //crtanje platformi
@@ -463,6 +511,7 @@ window.onload = function() {
             //provjere za game over
             Igrac.mrtav=provjere(naDuhuSam);   
             if(Igrac.mrtav){
+                muzikaZaIgru.pause();
                 let cookieZaRezultat=getCookie('rezultat');
                 if(cookieZaRezultat ==='')setCookie('rezultat',String(rezultat));
                 else if( rezultat>parseInt(cookieZaRezultat)) setCookie('rezultat',String(rezultat));
@@ -472,6 +521,8 @@ window.onload = function() {
             if (rezultat%2000===500){ //duh se ubrzava sa bodovima
                 Duh.ubrzava=100;
                 rezultat+=100;
+                efektZaPozadinu++;
+                efektZaPozadinu=0;
                 Duh.Dx+=0.05;
                 Duh.Dy+=0.05;
             }
@@ -518,6 +569,7 @@ window.onload = function() {
         gumbZvukOn.style.textAlign='center';
         gumbZvukOn.ontouchstart=function(){
             zvuk=true;
+            muzikaZaMenu.play();
             obojajPozadinu();
         };
         
@@ -530,6 +582,7 @@ window.onload = function() {
         gumbZvukOff.style.textAlign='center';
         gumbZvukOff.ontouchstart=function(){
             zvuk=false;
+            muzikaZaMenu.pause();
             obojajPozadinu();
         } ;  
         
@@ -665,6 +718,9 @@ window.onload = function() {
         gumbZaBoostSkok.style.display = 'block';
         gumbZaBoostBrzina.style.display = 'block';
         gumbZaSkokIzNiceg.style.display = 'block';
+        gumbZaZvuk.style.display='block';
+        if(zvuk) gumbZaZvuk.style.backgroundImage="url('slicice/sound.png')";
+        else gumbZaZvuk.style.backgroundImage="url('slicice/noSound.png')";
     }
     function postaviGumbeZaMeni(){
         gumbPocni.style.display = 'block';
@@ -672,12 +728,6 @@ window.onload = function() {
         hideA.style.display = 'block';
         gumbPostavke.style.display = 'block';
         topScore.style.display = 'block';
-    }
-    function makniGumbeZaIgru(){
-        gumbZaSkok.style.display = 'none';
-        gumbZaBoostSkok.style.display = 'none';
-        gumbZaBoostBrzina.style.display = 'none';
-        gumbZaSkokIzNiceg.style.display = 'none';
     }
     function makniGumbeZaMeni(){
         gumbPocni.style.display = 'none';
