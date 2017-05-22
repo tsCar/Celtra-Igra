@@ -4,10 +4,13 @@ window.onload = function() {
 //ToDo dokumentacija
 //ToDo možda teleportere dodat
 //ToDo možda animacije za skupljanje
+//ToDo custom zvukići za playful skin
+
     var skin;
         if (getCookie('skin')!=='')skin=getCookie('skin');
         else skin='normalSkin/';
     document.getElementById("warning-message").style.backgroundImage='url('.concat(skin,'slicice/portrait.png)');
+    var paused=false;
     var boostZaSkokTrajeJos=0;
     var dostupanBoostZaSkok=2;
     var boostZaBrzinuTrajeJos=0;
@@ -178,10 +181,10 @@ window.onload = function() {
     var hideA=document.getElementById("hideA");
     var gumbPocni = document.getElementById("start");
         gumbPocni.ontouchstart=function(){
-        Igrac.mrtav=false;
-        if(zvuk) {
-            muzikaZaMenu.pause();
-            muzikaZaIgru.play();
+            Igrac.mrtav=false;
+            if(zvuk) {
+                muzikaZaMenu.pause();
+                muzikaZaIgru.play();
         }
         pokreniIgru();
     };
@@ -189,6 +192,67 @@ window.onload = function() {
         gumbPomoc.ontouchstart= pomoc;
     var gumbPostavke= document.getElementById("postavke");
         gumbPostavke.ontouchstart= otvoriPostavke;
+    var gumbOdpauziraj;
+    var gumbOdustani;
+    var gumbMenu = document.createElement('button');
+        wrapper.appendChild(gumbMenu);
+        postaviGumb(gumbMenu,2,10);
+        gumbMenu.innerText='Menu';
+        gumbMenu.style.width='15%';
+        gumbMenu.style.textAlign='left';
+        gumbMenu.ontouchstart=function(){
+            paused=true;
+            gumbOdpauziraj=document.createElement('button');
+                wrapper.appendChild(gumbOdpauziraj);
+                postaviGumb(gumbOdpauziraj,2,25);
+                gumbOdpauziraj.innerText='Resume';
+                gumbOdpauziraj.style.width='15%';
+                gumbOdpauziraj.style.textAlign='left';
+                gumbOdpauziraj.style.display = 'block';
+                gumbOdpauziraj.ontouchstart=function(){
+                    paused=false;
+                    azuriraj();
+                    gumbOdpauziraj.parentNode.removeChild(gumbOdpauziraj);
+                    gumbOdustani.parentNode.removeChild(gumbOdustani);
+                };
+            gumbOdustani=document.createElement('button');
+                wrapper.appendChild(gumbOdustani);
+                postaviGumb(gumbOdustani,20,25);
+                gumbOdustani.innerText='Quit';
+                gumbOdustani.style.width='15%';
+                gumbOdustani.style.textAlign='left';
+                gumbOdustani.style.display = 'block';
+                gumbOdustani.ontouchstart=function(){
+                    //ako samo stavim window.location.reload()sve se ponovo učitava pa se vidi refresh i ružno je
+                    Igrac.X = sirinaCanvasa*0.15;
+                    Igrac.Y = 20;
+                    Igrac.mrtav=true;
+                    Duh.X=sirinaCanvasa;
+                    Duh.Y=visinaCanvasa;
+                    Duh.Dx=brzinaDuha;
+                    Duh.Dy=brzinaDuha;
+                    Duh.ubrzava=0;
+                    rezultat=0;
+                    paused=false;
+                    boostZaSkokTrajeJos=0;
+                    dostupanBoostZaSkok=2;
+                    gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
+                    boostZaBrzinuTrajeJos=0;
+                    dostupanBoostZaBrzinu=2;
+                    gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
+                    mozeSkokIzNiceg=false;
+                    dostupanSkokIzNiceg=1;
+                    gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
+                    brojacKadrova=0;
+                    bonusAktivan=false;
+                    gumbOdpauziraj.parentNode.removeChild(gumbOdpauziraj);
+                    gumbOdustani.parentNode.removeChild(gumbOdustani);
+                    ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
+                    makniGumbeZaIgru();
+                    postaviGumbeZaMeni();
+                };
+            
+        };
 
     ctx.font="15px Arial";
 //pozadine
@@ -201,7 +265,7 @@ window.onload = function() {
 
 //platforme
     var platforme=new Image();
-    platforme.src =skin.concat('slicice/platforme.png');
+        platforme.src =skin.concat('slicice/platforme.png');
     var visineZaPlatforme=[20,20,20,20,20,20,10];
     var sirineZaPlatforme=[150,100,110,200,250,50,250]; 
     var ikseviZaPlatforme=[Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.30), Math.ceil(sirinaCanvasa*0.8),Math.ceil(sirinaCanvasa*0), Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.15),Math.ceil(sirinaCanvasa*0.15)];
@@ -230,16 +294,10 @@ window.onload = function() {
     var kontrolaDesno;
 //pomoć
     let svaPomoc=[];
-        svaPomoc[0]=new Image();
-            svaPomoc[0].src =skin.concat( "slicice/pomoc0.png");
-        svaPomoc[1]=new Image();
-            svaPomoc[1].src =skin.concat( "slicice/pomoc1.png");
-        svaPomoc[2]=new Image();
-            svaPomoc[2].src =skin.concat( "slicice/pomoc2.png");
-        svaPomoc[3]=new Image();
-            svaPomoc[3].src =skin.concat( "slicice/pomoc3.png");
-        svaPomoc[4]=new Image();
-            svaPomoc[4].src =skin.concat( "slicice/pomoc4.png");            
+    for(let i=0;i<5;i++){
+        svaPomoc[i]=new Image();
+        svaPomoc[i].src =skin.concat( "slicice/pomoc".concat(i,".png"));
+    }          
     postaviGumbeZaMeni();
     function pokreniIgru(){
     //kontrole
@@ -291,10 +349,11 @@ window.onload = function() {
         if (brzinaDuha===0.35) duhLijevo.src =skin.concat('slicice/duhLijevoMedium.png');
         else if(brzinaDuha===0.5)duhLijevo.src =skin.concat('slicice/duhLijevoHard.png');
         else duhLijevo.src =skin.concat('slicice/duhLijevo.png');
-        duh=duhDesno;
+        duh=duhLijevo;
+//počni igru
         makniGumbeZaMeni();
         postaviGumbeZaIgru();
-        if(!Igrac.mrtav)requestAnimationFrame(azuriraj);
+        if(!Igrac.mrtav)azuriraj();
     }
     function animirajZvjezdicu(){
         Zvjezdica.prozirnost+=Zvjezdica.prozirnostD;
@@ -413,7 +472,7 @@ window.onload = function() {
             if(boostZaSkokTrajeJos>0)ctx.fillText(String(boostZaSkokTrajeJos),Igrac.X,Igrac.Y);
             //crtanje duha
             ctx.drawImage(duh,Duh.X,Duh.Y,Duh.sirina,Duh.visina);
-            if(Duh.ubrzava>0)ctx.fillText('Ghost speed increased',Duh.X,Duh.Y);
+            if(Duh.ubrzavaTimerZaPoruku>0)ctx.fillText('Ghost speed increased',Duh.X,Duh.Y);
             //crtanje zvjezdice
             animirajZvjezdicu();
             ctx.globalAlpha=Zvjezdica.prozirnost;
@@ -533,7 +592,7 @@ window.onload = function() {
         else gumbZaSkokIzNiceg.style.display = 'none';
         boostZaBrzinuTrajeJos--;
         boostZaSkokTrajeJos--;
-        if(Duh.ubrzava!==0)Duh.ubrzava--;
+        if(Duh.ubrzavaTimerZaPoruku!==0)Duh.ubrzavaTimerZaPoruku--;
         //platforme
         miciVodoravnePlatforme();
         miciOkomitePlatforme();  
@@ -552,9 +611,8 @@ window.onload = function() {
         //zvjezdice i bonusi
         jeZvjezdicaSkupljena();
         if (rezultat%2000===500){ //duh se ubrzava sa bodovima
-            Duh.ubrzava=100;
+            Duh.ubrzavaTimerZaPoruku=100;
             rezultat+=100;
-            efektZaPozadinu++;
             efektZaPozadinu=0;
             Duh.Dx+=0.05;
             Duh.Dy+=0.05;
@@ -564,7 +622,7 @@ window.onload = function() {
         if (bonusAktivan) jeBonusSkupljen();
         //crtanje
         nacrtaj();
-        if(!Igrac.mrtav)requestAnimationFrame(azuriraj);
+        if(!Igrac.mrtav&&!paused)requestAnimationFrame(azuriraj);
     }
     function pomoc(){
         makniGumbeZaMeni();
@@ -572,15 +630,24 @@ window.onload = function() {
         window.addEventListener("touchstart",funkcijaZaEventHandler);
         function funkcijaZaEventHandler(){ 
             if(count<svaPomoc.length){
-                ctx.drawImage(svaPomoc[count],sirinaCanvasa*0.1,visinaCanvasa*0.1,sirinaCanvasa*0.8,visinaCanvasa*0.8);
-                ctx.fillText('tap to continue',sirinaCanvasa*0.1+20,visinaCanvasa*0.1);
-                count++;
+                nacrtajPomoc();
             }
             else {
                 ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
                 window.removeEventListener("touchstart",funkcijaZaEventHandler);
                 postaviGumbeZaMeni();
             }
+        }
+        function nacrtajPomoc(){
+            if(svaPomoc[count].complete){ //preloading ne pomaže jer browser zaboravi stvari nakon nekog vremena.
+                ctx.drawImage(svaPomoc[count],sirinaCanvasa*0.1,visinaCanvasa*0.1,sirinaCanvasa*0.8,visinaCanvasa*0.8);
+                if(count===0)ctx.fillText('tap to continue',sirinaCanvasa*0.1+20,visinaCanvasa*0.1);
+                count++;
+            }
+            else{
+                ctx.fillText('please wait for just a moment, the image is being loaded',sirinaCanvasa*0.1+20,visinaCanvasa*0.1+20);
+                setTimeout(nacrtajPomoc, 200);                
+            } 
         }
     };
     function otvoriPostavke(){
@@ -778,6 +845,7 @@ window.onload = function() {
         gumbZaBoostBrzina.style.display = 'block';
         gumbZaSkokIzNiceg.style.display = 'block';
         gumbZaZvuk.style.display='block';  
+        gumbMenu.style.display='block';  
     }
     function postaviGumbeZaMeni(){
         gumbPocni.style.display = 'block';
@@ -785,6 +853,14 @@ window.onload = function() {
         hideA.style.display = 'block';
         gumbPostavke.style.display = 'block';
         topScore.style.display = 'block';
+    }
+    function makniGumbeZaIgru(){
+        gumbZaSkok.style.display = 'none';
+        gumbZaBoostSkok.style.display = 'none';
+        gumbZaBoostBrzina.style.display = 'none';
+        gumbZaSkokIzNiceg.style.display = 'none';
+        gumbZaZvuk.style.display='none';  
+        gumbMenu.style.display='none'; 
     }
     function makniGumbeZaMeni(){
         gumbPocni.style.display = 'none';
