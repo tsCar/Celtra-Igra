@@ -106,7 +106,7 @@ window.onload = function() {
     let gumbZaSkok=document.getElementById("jump");  
         gumbZaSkok.ontouchstart=function(){
             if (Igrac.skok<=0)
-                if(naDuhu()||naPodlozi()||skoroNaLiftu()) {
+                if(naDuhu()||naPodlozi()||skoroNaLiftu()||naLiftu()) {
                     if(zvuk){
                         if(Boost.boostZaSkokTrajeJos>0)velikiSkok.play();
                         else maliSkok.play();
@@ -144,7 +144,7 @@ window.onload = function() {
         };
     let gumbZaSkokIzNiceg=document.getElementById("skokIzNiceg");
         gumbZaSkokIzNiceg.ontouchstart=function(){
-            if(Boost.dostupanSkokIzNiceg>0){
+            if(Boost.dostupanSkokIzNiceg>0&&Boost.mozeSkokIzNiceg===false){
                 Boost.dostupanSkokIzNiceg--;
                 Boost.mozeSkokIzNiceg=true;
                 gumbZaSkokIzNiceg.innerText=Boost.dostupanSkokIzNiceg;
@@ -676,9 +676,9 @@ window.onload = function() {
         else gumbZaBoostSkok.style.display = 'none';
         if (Boost.dostupanSkokIzNiceg) gumbZaSkokIzNiceg.style.display = 'block';
         else gumbZaSkokIzNiceg.style.display = 'none';
-        Boost.boostZaBrzinuTrajeJos--;
-        Boost.boostZaSkokTrajeJos--;
-        if(Duh.timerZaPorukuDaUbrzava!==0)Duh.timerZaPorukuDaUbrzava--;
+        if(Boost.boostZaBrzinuTrajeJos>=0)Boost.boostZaBrzinuTrajeJos--;
+        if(Boost.boostZaSkokTrajeJos>=0)Boost.boostZaSkokTrajeJos--;
+        if(Duh.timerZaPorukuDaUbrzava>=0)Duh.timerZaPorukuDaUbrzava--;
         //platforme
         miciVodoravnePlatforme();
         miciOkomitePlatforme();  
@@ -883,8 +883,8 @@ window.onload = function() {
             else setCookie('skin','normalSkin/',30);
             if(diraoSkin) postaviNaPocetneVrijednosti();
         } ;  
-        //obojaj pozadinu
         obojajPozadinu();
+        
         function obojajPozadinu(){
             if(zvuk){
                 gumbZvukOn.style.backgroundColor = "rgba(6, 181, 43  ,0.75)";//zelena
