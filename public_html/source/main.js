@@ -1,74 +1,60 @@
 window.onload = function() {
-//boost
-//ToDo riješit duha/ bonus da ne titra
-//ToDo dokumentacija
-//ToDo možda teleportere dodat
-//ToDo možda animacije za skupljanje
-//ToDo custom zvukići za playful skin
-
     var skin;
-        if (getCookie('skin')!=='')skin=getCookie('skin');
-        else skin='normalSkin/';
-    document.getElementById("warning-message").style.backgroundImage='url('.concat(skin,'slicice/portrait.png)');
-    var paused=false;
-    var boostZaSkokTrajeJos=0;
-    var dostupanBoostZaSkok=2;
-    var boostZaBrzinuTrajeJos=0;
-    var dostupanBoostZaBrzinu=2;
-    var mozeSkokIzNiceg=false;
-    var dostupanSkokIzNiceg=1;
-    var brojacKadrova=0;
-    var bonusAktivan=false;
-    var boost=new Image();
-        boost.src =skin.concat('slicice/boost.png');
+    var paused;
+    var brojacKadrova;
+    var boost=new Image(); 
 //canvas
     let canvas = document.getElementById("canvas");
-        canvas.style.backgroundImage='url('.concat(skin,'slicice/pozadina0.png)');
-        if(screen.width>screen.height){ 
-        var sirinaCanvasa = canvas.width  = screen.width;
-        var visinaCanvasa = canvas.height = screen.height;
-    }
+        var sirinaCanvasa;
+        var visinaCanvasa;
+        //alert(window.navigator.userAgent)
+        if (window.navigator.userAgent.indexOf('Edge') !== -1)
+            dodijeliDimenzije(window.innerWidth,window.innerHeight);//ako se gleda sa edge, postavi na inner jer se address bar ne može micat
+        else dodijeliDimenzije(screen.width,screen.height);
+    function dodijeliDimenzije(sirina,visina){
+        if(sirina>visina){ 
+            sirinaCanvasa = canvas.width  = sirina;
+            visinaCanvasa = canvas.height = visina;
+        } 
         else {
-        var sirinaCanvasa = canvas.width  = screen.height;
-        var visinaCanvasa = canvas.height = screen.width;
-    }    
+            sirinaCanvasa = canvas.width  = visina;
+            visinaCanvasa = canvas.height = sirina;
+        } 
+    }
     var ctx = canvas.getContext("2d");
     var wrapper=document.getElementById("wrapper");
-    //postavke
+    var requestAnimationFrame = (function(){
+        return window.requestAnimationFrame    || 
+               window.webkitRequestAnimationFrame || 
+               window.mozRequestAnimationFrame    || 
+               window.oRequestAnimationFrame      || 
+               window.msRequestAnimationFrame
+       ;
+    })();
+//postavke
     var zvuk;
-        if (getCookie('zvuk')==='upaljen')zvuk=true;
-        else zvuk=false;
     var gyro;
-        if (getCookie('gyro')==='ugasen')gyro=false;
-        else gyro=true;   
     var brzinaDuha;
-        if (getCookie('brzinaDuha')==='medium')brzinaDuha=0.35;
-        else if (getCookie('brzinaDuha')==='hard')brzinaDuha=0.5;
-        else brzinaDuha=0.2;
-    //muzika
-    var muzikaZaMenu = new Audio(skin.concat('zvukici/menu.wav'));
-        muzikaZaMenu.loop = true;
-    var muzikaZaIgru = new Audio(skin.concat('zvukici/igra.mp3'));
-        muzikaZaIgru.loop = true;
-    var maliSkok = new Audio(skin.concat('zvukici/maliSkok.mp3'));
-    var velikiSkok = new Audio(skin.concat('zvukici/velikiSkok.mp3'));
-    var boostSound = new Audio(skin.concat('zvukici/boost.mp3'));
-    var zaKraj = new Audio(skin.concat('zvukici/zaKraj.mp3'));
-    var skupi = new Audio(skin.concat('zvukici/skupi.mp3'));
-    //igrac         
+//muzika 
+    var muzikaZaMenu= new Audio;
+    var muzikaZaIgru= new Audio;
+    var maliSkok= new Audio;
+    var velikiSkok= new Audio;
+    var boostSound= new Audio;
+    var zaKraj= new Audio;
+    var skupi= new Audio;
+//igrac         
     var Igrac={
         X : sirinaCanvasa*0.15,
         Y : 20,
         Dx : 0,
         Dy : 0,
         visina:Math.round(visinaCanvasa*0.1),
-        get polaVisine(){return this.visina/2;}, //cesto se koristi, žrtvujem malo prostora za brzi rad
         sirina:Math.round(visinaCanvasa*0.1),
-        get polaSirine(){return this.sirina/2;},
         skok:0,
         //sprite za igraca
-        sirinaSpritesheeta : 844,
-        visinaSpritesheeta : 629, 
+        sirinaSpritesheeta : 600,
+        visinaSpritesheeta : 447, 
         brojRedakaSpritesheet : 4, 
         brojStupacaSpritesheet : 3, 
         redakZaGore : 0,
@@ -87,95 +73,97 @@ window.onload = function() {
         mrtav:true
     };
     var igrac=new Image();
-        igrac.src =skin.concat( "slicice/brodic.png");
     var up=new Image();
-        up.src =skin.concat( "slicice/up.png");
 //duh  
     var Duh={
         X : sirinaCanvasa,
         Y : visinaCanvasa,
         visina:visinaCanvasa*0.1,
-        get polaVisine(){return this.visina/2;},
         sirina:visinaCanvasa*0.1,
-        get polaSirine(){return this.sirina/2;},
         Dx:brzinaDuha,
         Dy:brzinaDuha,
-        ubrzava:0
-    };
+        timerZaPorukuDaUbrzava:0
+    };     
     var duhDesno=new Image();
     var duhLijevo=new Image();
     var duh;
-    //gumbi
+    var duhZaKraj=new Image();
+//boost
+    var Boost={
+        boostZaSkokTrajeJos:0,
+        dostupanBoostZaSkok:2,
+        boostZaBrzinuTrajeJos:0,
+        dostupanBoostZaBrzinu:2,
+        mozeSkokIzNiceg:false,
+        dostupanSkokIzNiceg:1,
+        bonusAktivan:false,
+        ispisiKojiBoost:'No.',
+        ispisiGdje:100,
+        xZaispisiKojiBoost:0,
+        yZaispisiKojiBoost:0
+    };
+//gumbi
     let gumbZaSkok=document.getElementById("jump");  
-        gumbZaSkok.style.backgroundImage='url('.concat(skin,'slicice/skok.png)');
         gumbZaSkok.ontouchstart=function(){
             if (Igrac.skok<=0)
                 if(naDuhu()||naPodlozi()||skoroNaLiftu()) {
                     if(zvuk){
-                        if(boostZaSkokTrajeJos>0)velikiSkok.play();
+                        if(Boost.boostZaSkokTrajeJos>0)velikiSkok.play();
                         else maliSkok.play();
                     }
-                    if(boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
+                    if(Boost.boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
                     else Igrac.skok=visinaCanvasa*0.1;
                 }
-                else if(mozeSkokIzNiceg){
+                else if(Boost.mozeSkokIzNiceg){
                     if(zvuk){
-                        if(boostZaSkokTrajeJos>0)velikiSkok.play();
+                        if(Boost.boostZaSkokTrajeJos>0)velikiSkok.play();
                         else maliSkok.play();
                     }
-                    mozeSkokIzNiceg=false;
-                    if(boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
+                    Boost.mozeSkokIzNiceg=false;
+                    if(Boost.boostZaSkokTrajeJos>0)Igrac.skok=visinaCanvasa*0.15;
                     else Igrac.skok=visinaCanvasa*0.1;                
                 }
         };     
     let gumbZaBoostSkok=document.getElementById("boostJump");
-        gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
-        gumbZaBoostSkok.style.backgroundImage='url('.concat(skin,'slicice/boostSkok.png)');
         gumbZaBoostSkok.ontouchstart=function(){
-            if(boostZaSkokTrajeJos<=0&&dostupanBoostZaSkok>0){
-                dostupanBoostZaSkok--;
-                boostZaSkokTrajeJos=600;
-                gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
+            if(Boost.boostZaSkokTrajeJos<=0&&Boost.dostupanBoostZaSkok>0){
+                Boost.dostupanBoostZaSkok--;
+                Boost.boostZaSkokTrajeJos=600;
+                gumbZaBoostSkok.innerText=Boost.dostupanBoostZaSkok;
                 if(zvuk)boostSound.play();
             }
         };    
     let gumbZaBoostBrzina=document.getElementById("boostSpeed");
-        gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
-        gumbZaBoostBrzina.style.backgroundImage='url('.concat(skin,'slicice/boostBrzina.png)');
         gumbZaBoostBrzina.ontouchstart=function(){
-            if(boostZaBrzinuTrajeJos<=0&&dostupanBoostZaBrzinu>0){
-                dostupanBoostZaBrzinu--;
-                boostZaBrzinuTrajeJos=600;
-                gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
+            if(Boost.boostZaBrzinuTrajeJos<=0&&Boost.dostupanBoostZaBrzinu>0){
+                Boost.dostupanBoostZaBrzinu--;
+                Boost.boostZaBrzinuTrajeJos=600;
+                gumbZaBoostBrzina.innerText=Boost.dostupanBoostZaBrzinu;
                 if(zvuk)boostSound.play();
             }
         };
     let gumbZaSkokIzNiceg=document.getElementById("skokIzNiceg");
-        gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
-        gumbZaSkokIzNiceg.style.backgroundImage='url('.concat(skin,'slicice/skokIzNiceg.png)');
         gumbZaSkokIzNiceg.ontouchstart=function(){
-            if(dostupanSkokIzNiceg>0){
-                dostupanSkokIzNiceg--;
-                mozeSkokIzNiceg=true;
-                gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
+            if(Boost.dostupanSkokIzNiceg>0){
+                Boost.dostupanSkokIzNiceg--;
+                Boost.mozeSkokIzNiceg=true;
+                gumbZaSkokIzNiceg.innerText=Boost.dostupanSkokIzNiceg;
                 if(zvuk)boostSound.play();
             }        
         };
     let gumbZaZvuk=document.getElementById("zvuk");
-        if(zvuk) gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/sound.png)');
-        else gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/noSound.png)');
         gumbZaZvuk.ontouchstart=function(){
         if (zvuk){
             zvuk=false;
             muzikaZaIgru.pause();
             setCookie('zvuk','ugasen',30);
-            gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/noSound.png)');
+            gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/optimized/noSound.png)');
         }
         else { 
             zvuk=true;
             muzikaZaIgru.play();
             setCookie('zvuk','upaljen',30);
-            gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/sound.png)'); 
+            gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/optimized/sound.png)'); 
         }
     };
     var hideA=document.getElementById("hideA");
@@ -185,9 +173,9 @@ window.onload = function() {
             if(zvuk) {
                 muzikaZaMenu.pause();
                 muzikaZaIgru.play();
-        }
-        pokreniIgru();
-    };
+            }
+            pokreniIgru();
+        };
     var gumbPomoc = document.getElementById("pomoc");
         gumbPomoc.ontouchstart= pomoc;
     var gumbPostavke= document.getElementById("postavke");
@@ -202,6 +190,7 @@ window.onload = function() {
         gumbMenu.style.textAlign='left';
         gumbMenu.ontouchstart=function(){
             paused=true;
+            gumbMenu.style.display = 'none';
             gumbOdpauziraj=document.createElement('button');
                 wrapper.appendChild(gumbOdpauziraj);
                 postaviGumb(gumbOdpauziraj,2,25);
@@ -211,6 +200,7 @@ window.onload = function() {
                 gumbOdpauziraj.style.display = 'block';
                 gumbOdpauziraj.ontouchstart=function(){
                     paused=false;
+                    gumbMenu.style.display = 'block';
                     azuriraj();
                     gumbOdpauziraj.parentNode.removeChild(gumbOdpauziraj);
                     gumbOdustani.parentNode.removeChild(gumbOdustani);
@@ -223,71 +213,40 @@ window.onload = function() {
                 gumbOdustani.style.textAlign='left';
                 gumbOdustani.style.display = 'block';
                 gumbOdustani.ontouchstart=function(){
-                    //ako samo stavim window.location.reload()sve se ponovo učitava pa se vidi refresh i ružno je
-                    Igrac.X = sirinaCanvasa*0.15;
-                    Igrac.Y = 20;
-                    Igrac.mrtav=true;
-                    Duh.X=sirinaCanvasa;
-                    Duh.Y=visinaCanvasa;
-                    Duh.Dx=brzinaDuha;
-                    Duh.Dy=brzinaDuha;
-                    Duh.ubrzava=0;
-                    rezultat=0;
-                    paused=false;
-                    boostZaSkokTrajeJos=0;
-                    dostupanBoostZaSkok=2;
-                    gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
-                    boostZaBrzinuTrajeJos=0;
-                    dostupanBoostZaBrzinu=2;
-                    gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
-                    mozeSkokIzNiceg=false;
-                    dostupanSkokIzNiceg=1;
-                    gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
-                    brojacKadrova=0;
-                    bonusAktivan=false;
                     gumbOdpauziraj.parentNode.removeChild(gumbOdpauziraj);
                     gumbOdustani.parentNode.removeChild(gumbOdustani);
-                    ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
-                    makniGumbeZaIgru();
-                    postaviGumbeZaMeni();
+                    postaviNaPocetneVrijednosti();
                 };
-            
         };
-
-    ctx.font="15px Arial";
 //pozadine
     var pozadine=[];
     for (let i=0;i<=6;i++){
         pozadine[i]=new Image;
-        pozadine[i].src =skin.concat('slicice/pozadina'.concat(String(i),'.png'));
     }
-    var efektZaPozadinu=0;
-
+    var efektZaPozadinu;
 //platforme
     var platforme=new Image();
-        platforme.src =skin.concat('slicice/platforme.png');
     var visineZaPlatforme=[20,20,20,20,20,20,10];
     var sirineZaPlatforme=[150,100,110,200,250,50,250]; 
-    var ikseviZaPlatforme=[Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.30), Math.ceil(sirinaCanvasa*0.8),Math.ceil(sirinaCanvasa*0), Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.15),Math.ceil(sirinaCanvasa*0.15)];
-    var ipsiloniZaPlatforme=[Math.ceil(visinaCanvasa-visineZaPlatforme[0]-1), Math.ceil(visinaCanvasa*0.4), Math.ceil(visinaCanvasa*0.7),Math.ceil(visinaCanvasa*0.25),Math.ceil(visinaCanvasa*0.550),Math.ceil(visinaCanvasa*0.4),Math.ceil(visinaCanvasa*0.8)];
+    var ikseviZaPlatforme;
+    var ipsiloniZaPlatforme;
     var okomiti=[2,5];
-    var okomitiSmjerovi=[1,1];
+    var okomitiSmjerovi;
     var vodoravni=[0,3,4,6];
-    var vodoravniSmjerovi=[1,1,1,1];
-
+    var vodoravniSmjerovi;
 //bodovi
     var zvjezdica=new Image();
-    zvjezdica.src =skin.concat( "slicice/zvjezdica.png");
-    var rezultat=0;
+    var rezultat;
     var topScore= document.getElementById("top");
-    let topScoreValue=getCookie('rezultat');
-        if (topScoreValue!=='') topScore.innerText='Top Score: '+topScoreValue;
-        else topScore.innerText='Top Score: 0';
+    let topScoreValue;
     var Zvjezdica={
         prozirnost:1,
         prozirnostD:-0.01,
         X:111,
-        Y:111
+        Y:111,
+        ispisiSkupljeneBodove:101,
+        xZaBodove:0,
+        yZaBodove:0
     };
 //kontrole
     var kontrolaLijevo;
@@ -296,12 +255,107 @@ window.onload = function() {
     let svaPomoc=[];
     for(let i=0;i<5;i++){
         svaPomoc[i]=new Image();
-        svaPomoc[i].src =skin.concat( "slicice/pomoc".concat(i,".png"));
-    }          
-    postaviGumbeZaMeni();
-    function pokreniIgru(){
-    //kontrole
-        if(gyro)window.ondevicemotion = function(event) {  
+    }  
+    postaviNaPocetneVrijednosti();
+
+    
+//Funkcije
+    function postaviNaPocetneVrijednosti(){ 
+        ctx.clearRect(0, 0, sirinaCanvasa,visinaCanvasa);
+        if (getCookie('skin')!=='')skin=getCookie('skin');
+        else skin='normalSkin/'; 
+        paused=false;
+        brojacKadrova=0;
+        window.removeEventListener('devicemotion', obradiKretanje ,false);
+        document.getElementById("warning-message").style.backgroundImage='url('.concat(skin,'slicice/optimized/portrait.jpg)');
+        canvas.style.backgroundImage='url('.concat(skin,'slicice/optimized/pozadina0.jpg)');
+        ctx.font = "15px Arial";
+        ctx.fillStyle = 'Black';
+        boost.src =skin.concat('slicice/optimized/boost.png');
+        if (getCookie('zvuk')==='upaljen')zvuk=true;
+        else zvuk=false;
+        if (getCookie('gyro')==='ugasen')gyro=false;
+        else gyro=true;   
+        if (getCookie('brzinaDuha')==='medium')brzinaDuha=0.35;
+        else if (getCookie('brzinaDuha')==='hard')brzinaDuha=0.5;
+        else brzinaDuha=0.2;
+        muzikaZaMenu.src =skin.concat('zvukici/menu.wav');
+        muzikaZaMenu.loop = true;
+        muzikaZaIgru.src =skin.concat('zvukici/igra.mp3');
+        muzikaZaIgru.loop = true;
+        maliSkok.src =skin.concat('zvukici/maliSkok.mp3');
+        velikiSkok.src =skin.concat('zvukici/velikiSkok.mp3');
+        boostSound.src =skin.concat('zvukici/boost.mp3');
+        zaKraj.src =skin.concat('zvukici/zaKraj.mp3');
+        skupi.src =skin.concat('zvukici/skupi.mp3');
+        Igrac.X=sirinaCanvasa*0.15;
+        Igrac.Y=0;
+        Igrac.idiLijevo=false;
+        Igrac.idiDesno=false;
+        Igrac.mrtav=true;
+        Igrac.aktivniKadarSprite = 0;
+        Igrac.kadarX = 0;
+        Igrac.kadarY = 0; 
+        Igrac.tickCount = 0;
+        igrac.src =skin.concat( "slicice/optimized/brodic.png");
+        up.src =skin.concat( "slicice/optimized/up.png");
+        Duh.X = sirinaCanvasa;
+        Duh.Y = visinaCanvasa;
+        Duh.Dx=brzinaDuha;
+        Duh.Dy=brzinaDuha;
+        Duh.timerZaPorukuDaUbrzava=0;
+        duhZaKraj.src=skin.concat( "slicice/duhLijevo.png");
+        Boost.boostZaSkokTrajeJos=0;
+        Boost.dostupanBoostZaSkok=2;
+        Boost.boostZaBrzinuTrajeJos=0;
+        Boost.dostupanBoostZaBrzinu=2;
+        Boost.mozeSkokIzNiceg=false;
+        Boost.dostupanSkokIzNiceg=1;
+        Boost.bonusAktivan=false;
+        Boost.ispisiKojiBoost='No.';
+        Boost.ispisiGdje=100;
+        Boost.xZaispisiKojiBoost=0;
+        Boost.yZaispisiKojiBoost=0;    
+        gumbZaSkok.style.backgroundImage='url('.concat(skin,'slicice/optimized/skok.png)'); 
+        gumbZaBoostSkok.innerText=Boost.dostupanBoostZaSkok;
+        gumbZaBoostSkok.style.backgroundImage='url('.concat(skin,'slicice/optimized/boostSkok.png)');
+        gumbZaBoostSkok.style.bottom= '15vw';
+        gumbZaBoostBrzina.innerText=Boost.dostupanBoostZaBrzinu;
+        gumbZaBoostBrzina.style.backgroundImage='url('.concat(skin,'slicice/optimized/boostBrzina.png)');
+        gumbZaBoostBrzina.style.bottom='0vw';
+        gumbZaSkokIzNiceg.innerText=Boost.dostupanSkokIzNiceg;
+        gumbZaSkokIzNiceg.style.backgroundImage='url('.concat(skin,'slicice/optimized/skokIzNiceg.png)');
+        gumbZaSkokIzNiceg.style.bottom= '0vw';
+        if(zvuk) gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/optimized/sound.png)');
+        else gumbZaZvuk.style.backgroundImage='url('.concat(skin,'slicice/optimized/noSound.png)');
+        for (let i=0;i<=6;i++){
+            pozadine[i].src =skin.concat('slicice/optimized/pozadina'.concat(String(i),'.jpg'));
+        }
+        efektZaPozadinu=0;
+        platforme.src =skin.concat('slicice/optimized/platforme.png');
+        ikseviZaPlatforme=[Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.30), Math.ceil(sirinaCanvasa*0.8),Math.ceil(sirinaCanvasa*0), Math.ceil(sirinaCanvasa*0.7),Math.ceil(sirinaCanvasa*0.15),Math.ceil(sirinaCanvasa*0.15)];
+        ipsiloniZaPlatforme=[Math.ceil(visinaCanvasa-visineZaPlatforme[0]-1), Math.ceil(visinaCanvasa*0.4), Math.ceil(visinaCanvasa*0.7),Math.ceil(visinaCanvasa*0.25),Math.ceil(visinaCanvasa*0.550),Math.ceil(visinaCanvasa*0.4),Math.ceil(visinaCanvasa*0.8)];
+        okomitiSmjerovi=[1,1];
+        vodoravniSmjerovi=[1,1,1,1];
+        zvjezdica.src =skin.concat( "slicice/optimized/zvjezdica.png");
+        rezultat=0;
+        topScoreValue=getCookie('rezultat');
+        if (topScoreValue!=='') topScore.innerText='Top Score: '.concat(topScoreValue);
+        else topScore.innerText='Top Score: 0';
+        Zvjezdica.prozirnost=1;
+        Zvjezdica.prozirnostD=-0.01;
+        Zvjezdica.X=111;
+        Zvjezdica.Y=111;
+        Zvjezdica.ispisiSkupljeneBodove=101;
+        Zvjezdica.xZaBodove=0;
+        Zvjezdica.yZaBodove=0;
+        for(let i=0;i<5;i++){
+            svaPomoc[i].src =skin.concat( "slicice/optimized/pomoc".concat(i,".jpg"));
+        }  
+        postaviGumbeZaMeni();
+        makniGumbeZaIgru();
+    };
+    function obradiKretanje(event){  
             let nagib = Math.floor(event.accelerationIncludingGravity.y*10) / 10;
             if(nagib>1) Igrac.idiDesno=true;
             else if(nagib<-1) Igrac.idiLijevo=true;
@@ -309,79 +363,101 @@ window.onload = function() {
                 Igrac.idiDesno=false;
                 Igrac.idiLijevo=false;
             }
-        };
+        }
+    function pokreniIgru(){
+    //kontrole
+        if(gyro) window.addEventListener('devicemotion', obradiKretanje ,false);
         else {
             //pomakni gumbe za bonus
-            gumbZaSkokIzNiceg.style.bottom='40vh';
+            gumbZaSkokIzNiceg.style.bottom='15vh';
             gumbZaBoostBrzina.style.bottom='15vh';
-            gumbZaBoostSkok.style.bottom='15vh';
+            gumbZaBoostSkok.style.bottom='40vh';
             //napravi strelice
             kontrolaLijevo = document.createElement('button');
             wrapper.appendChild(kontrolaLijevo);
-            postaviGumb(kontrolaLijevo,1,90);
-            kontrolaLijevo.style.backgroundImage='url('.concat(skin,'slicice/left.png)');
+            postaviGumb(kontrolaLijevo,1,85);
+            kontrolaLijevo.style.backgroundImage='url('.concat(skin,'slicice/optimized/left.png)');
             kontrolaLijevo.style.display = 'block';
             kontrolaLijevo.innerText='left';
             kontrolaLijevo.style.textIndent='-2222px';
             kontrolaLijevo.style.width='10%';
-            kontrolaLijevo.style.height='10%';
+            kontrolaLijevo.style.height='15%';
             kontrolaLijevo.style.backgroundSize= '100% 100%';
             kontrolaLijevo.ontouchstart=function(){Igrac.idiLijevo=true;};
             kontrolaLijevo.ontouchend=function(){Igrac.idiLijevo=false;};
 
             kontrolaDesno = document.createElement('button');
             wrapper.appendChild(kontrolaDesno);
-            postaviGumb(kontrolaDesno,20,90);
-            kontrolaDesno.style.backgroundImage='url('.concat(skin,'slicice/right.png)');
+            postaviGumb(kontrolaDesno,20,85);
+            kontrolaDesno.style.backgroundImage='url('.concat(skin,'slicice/optimized/right.png)');
             kontrolaDesno.style.display = 'block';
             kontrolaDesno.innerText='right';
             kontrolaDesno.style.textIndent='-2222px';
             kontrolaDesno.style.width='10%';
-            kontrolaDesno.style.height='10%';
+            kontrolaDesno.style.height='15%';
             kontrolaDesno.style.backgroundSize= '100% 100%';
             kontrolaDesno.ontouchstart=function(){Igrac.idiDesno=true;};
             kontrolaDesno.ontouchend=function(){Igrac.idiDesno=false;};
         };
-//Izbor slike za duha
-        if (brzinaDuha===0.35) duhDesno.src =skin.concat('slicice/duhDesnoMedium.png');
-        else if(brzinaDuha===0.5)duhDesno.src =skin.concat('slicice/duhDesnoHard.png');
-        else duhDesno.src =skin.concat('slicice/duhDesno.png');
-        if (brzinaDuha===0.35) duhLijevo.src =skin.concat('slicice/duhLijevoMedium.png');
-        else if(brzinaDuha===0.5)duhLijevo.src =skin.concat('slicice/duhLijevoHard.png');
-        else duhLijevo.src =skin.concat('slicice/duhLijevo.png');
+        //Izbor slike za duha
+        if (brzinaDuha===0.35) duhDesno.src =skin.concat('slicice/optimized/duhDesnoMedium.png');
+        else if(brzinaDuha===0.5)duhDesno.src =skin.concat('slicice/optimized/duhDesnoHard.png');
+        else duhDesno.src =skin.concat('slicice/optimized/duhDesno.png');
+        if (brzinaDuha===0.35) duhLijevo.src =skin.concat('slicice/optimized/duhLijevoMedium.png');
+        else if(brzinaDuha===0.5)duhLijevo.src =skin.concat('slicice/optimized/duhLijevoHard.png');
+        else duhLijevo.src =skin.concat('slicice/optimized/duhLijevo.png');
         duh=duhLijevo;
-//počni igru
+        //počni igru
         makniGumbeZaMeni();
-        postaviGumbeZaIgru();
-        if(!Igrac.mrtav)azuriraj();
+        pokreni();
+        function pokreni(){
+            if(boost.complete&&platforme.complete&&igrac.complete&&duhDesno.complete&&duhLijevo.complete&&pozadine[0].complete&&zvjezdica.complete&&pozadine[1].complete&&pozadine[2].complete&&pozadine[3].complete&&pozadine[4].complete&&pozadine[5].complete){ //preloading ne pomaže jer browser zaboravi stvari nakon nekog vremena.
+                postaviGumbeZaIgru();
+                if(!Igrac.mrtav)azuriraj();
+            }
+            else{
+                ctx.fillText('Loading game graphics...',sirinaCanvasa*0.2,visinaCanvasa*0.3);
+                setTimeout(pokreni, 200);                
+            }
+        }
     }
     function animirajZvjezdicu(){
         Zvjezdica.prozirnost+=Zvjezdica.prozirnostD;
         if (Zvjezdica.prozirnost<0.5||Zvjezdica.prozirnost>=1)Zvjezdica.prozirnostD*=-1;
     } 
     function jeZvjezdicaSkupljena(){
-        if(Math.abs((Igrac.Y+Igrac.polaVisine)-(Zvjezdica.Y+Igrac.polaVisine))<(2*Igrac.visina)/2 && Math.abs((Igrac.X+Igrac.polaSirine)-(Zvjezdica.X+Duh.polaSirine))<(2*Igrac.sirina)/3) {//zvjezdica i igrač su iste veličine
+        if(Math.abs((Igrac.Y+Igrac.visina/2)-(Zvjezdica.Y+Igrac.visina/2))<(2*Igrac.visina)/2 && Math.abs((Igrac.X+Igrac.sirina/2)-(Zvjezdica.X+Duh.sirina/2))<(2*Igrac.sirina)/3) {//zvjezdica i igrač su iste veličine
+            Zvjezdica.xZaBodove=Zvjezdica.X;
+            Zvjezdica.yZaBodove=Zvjezdica.Y;            
             Zvjezdica.Y=Math.random()*0.9*visinaCanvasa;
             Zvjezdica.X=Math.random()*0.9*sirinaCanvasa;
             rezultat+=100;
-            if(zvuk)skupi.play();
+            if(zvuk)skupi.play(); //browser će najvjerojatnije blokirat
+            Zvjezdica.ispisiSkupljeneBodove=0;
+
        }; 
     }
     function jeBonusSkupljen(){
-        if(Math.abs((Igrac.Y+Igrac.polaVisine)-(Duh.Y-Igrac.visina+Igrac.polaVisine))<(2*Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.polaSirine)-(Duh.X+Igrac.polaSirine))<(2*Igrac.sirina)/3){ //bonus je iste veličine kao i igrac
-            bonusAktivan=false;
+        if(Math.abs((Igrac.Y+Igrac.visina/2)-(Duh.Y-Igrac.visina+Igrac.visina/2))<(2*Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.sirina/2)-(Duh.X+Igrac.sirina/2))<(2*Igrac.sirina)/3){ //bonus je iste veličine kao i igrac
+            Boost.bonusAktivan=false;
+            Boost.xZaispisiKojiBoost=Duh.X;
+            Boost.yZaispisiKojiBoost=Duh.Y-Igrac.visina;
+            Boost.ispisiGdje=0;
             let sreca=Math.random();
             if(sreca<0.1){
-                dostupanSkokIzNiceg++;
-                gumbZaSkokIzNiceg.innerText=dostupanSkokIzNiceg;
+                Boost.dostupanSkokIzNiceg++;
+                Boost.ispisiKojiBoost='boost MID-AIR JUMP +1';
+                gumbZaSkokIzNiceg.innerText=Boost.dostupanSkokIzNiceg;
             }
             else if(sreca<0.55){
-                dostupanBoostZaBrzinu++;
-                gumbZaBoostBrzina.innerText=dostupanBoostZaBrzinu;
+                Boost.dostupanBoostZaBrzinu++;
+                Boost.ispisiKojiBoost='boost SPEED +1',
+                gumbZaBoostBrzina.innerText=Boost.dostupanBoostZaBrzinu;
             }
             else {
-                dostupanBoostZaSkok++;
-                gumbZaBoostSkok.innerText=dostupanBoostZaSkok;
+                Boost.dostupanBoostZaSkok++;
+                Boost.ispisiKojiBoost='boost JUMP +1',
+                gumbZaBoostSkok.innerText=Boost.dostupanBoostZaSkok;
             }
         }        
     }
@@ -442,9 +518,11 @@ window.onload = function() {
         }
 
         if (Igrac.mrtav){
-            ctx.drawImage(duhLijevo,0,0);
+            ctx.drawImage(duhZaKraj,(sirinaCanvasa-visinaCanvasa)/4,0);
+            ctx.font = "25px Arial";
+            ctx.fillStyle = 'Wheat';
             ctx.fillText('Game over',sirinaCanvasa*0.7,visinaCanvasa*0.3);
-            setTimeout(function() {location.reload();}, 2000);
+            setTimeout(function() {postaviNaPocetneVrijednosti();}, 2000);
             if(zvuk)zaKraj.play();
         }
         else{
@@ -453,12 +531,11 @@ window.onload = function() {
                 ctx.drawImage(platforme,ikseviZaPlatforme[i],ipsiloniZaPlatforme[i],sirineZaPlatforme[i],visineZaPlatforme[i]+5);
             }
             //crtanje igrača
-            animirajIgraca();
             ctx.font = "15px Arial";
             ctx.fillStyle = 'Black';
             if(Igrac.Y+Igrac.visina>=0){ //ako je igrač u ekranu, nacrtaj ga
                 ctx.drawImage(igrac,Igrac.kadarX,Igrac.kadarY,Igrac.sirinaSprite,Igrac.visinaSprite,Igrac.X,Igrac.Y,Igrac.sirina,Igrac.visina);
-                if(mozeSkokIzNiceg) { //ako je aktiviran bonus za Igrac.skok iz ničeg, nacrtaj malu poluprozirnu platformicu ispod igrača
+                if(Boost.mozeSkokIzNiceg) { //ako je aktiviran bonus za Igrac.skok iz ničeg, nacrtaj malu poluprozirnu platformicu ispod igrača
                     ctx.globalAlpha=0.25;
                     ctx.drawImage(platforme,Igrac.X,Igrac.Y+Igrac.visina,Igrac.sirina,5);
                     ctx.globalAlpha=1;
@@ -468,24 +545,33 @@ window.onload = function() {
                 ctx.drawImage(up,Igrac.X,25,Igrac.sirina,Igrac.visina );
                 ctx.fillText(String(Math.round(Igrac.Y+Igrac.visina)),Igrac.X,40+Igrac.visina);
             }
-            if (boostZaBrzinuTrajeJos>0)ctx.fillText(String(boostZaBrzinuTrajeJos),Igrac.X+40,Igrac.Y+30);
-            if(boostZaSkokTrajeJos>0)ctx.fillText(String(boostZaSkokTrajeJos),Igrac.X,Igrac.Y);
+            if (Boost.boostZaBrzinuTrajeJos>0)ctx.fillText('speed: '.concat(String(Boost.boostZaBrzinuTrajeJos)),Igrac.X+40,Igrac.Y+30);
+            if(Boost.boostZaSkokTrajeJos>0)ctx.fillText('jump: '.concat(String(Boost.boostZaSkokTrajeJos)),Igrac.X,Igrac.Y);
             //crtanje duha
             ctx.drawImage(duh,Duh.X,Duh.Y,Duh.sirina,Duh.visina);
-            if(Duh.ubrzavaTimerZaPoruku>0)ctx.fillText('Ghost speed increased',Duh.X,Duh.Y);
+            if(Duh.timerZaPorukuDaUbrzava>0)ctx.fillText('Ghost speed increased',Duh.X,Duh.Y);
             //crtanje zvjezdice
-            animirajZvjezdicu();
             ctx.globalAlpha=Zvjezdica.prozirnost;
             ctx.drawImage(zvjezdica,Zvjezdica.X,Zvjezdica.Y,Igrac.sirina,Igrac.visina);
             ctx.globalAlpha=1;
             //crtanje bonusa
-            if (bonusAktivan)ctx.drawImage(boost,Duh.X,Duh.Y-Igrac.visina,Igrac.sirina,Igrac.visina);
+            if (Boost.bonusAktivan)ctx.drawImage(boost,Duh.X,Duh.Y-Igrac.visina,Igrac.sirina,Igrac.visina);
             //ispis bodova
             ctx.font = "25px Arial";
             ctx.fillStyle = 'Wheat';
             ctx.fillText(String(rezultat) , (canvas.width/2) - (ctx.measureText(String(rezultat)).width / 2), 50);
+            if(Zvjezdica.ispisiSkupljeneBodove <51) {
+                ctx.fillText('+100' ,Zvjezdica.xZaBodove,Zvjezdica.yZaBodove-Zvjezdica.ispisiSkupljeneBodove);
+                Zvjezdica.ispisiSkupljeneBodove++;
+            }
+            ctx.fillStyle='LIMEGREEN';
+            if(Boost.ispisiGdje<51) {            
+                ctx.fillText(Boost.ispisiKojiBoost , Boost.xZaispisiKojiBoost , Boost.yZaispisiKojiBoost-Boost.ispisiGdje);
+                Boost.ispisiGdje++;
+            }
+            ctx.font = "15px Arial";
+            ctx.fillStyle = 'Black';
         }
-
     }
     function miciVodoravnePlatforme(){
         for (let i=0;i<vodoravni.length;i++){
@@ -555,7 +641,7 @@ window.onload = function() {
         if(Igrac.idiDesno)Igrac.Dx=1;
         else if (Igrac.idiLijevo)Igrac.Dx=-1;
         else Igrac.Dx=0;
-        if (boostZaBrzinuTrajeJos>0)Igrac.Dx*=2;
+        if (Boost.boostZaBrzinuTrajeJos>0)Igrac.Dx*=2;
         if (Igrac.X+Igrac.Dx>=0 && Igrac.X+Igrac.Dx+Igrac.sirina<=sirinaCanvasa) Igrac.X+=Igrac.Dx;
         return naDuhuSam;
     }
@@ -579,20 +665,20 @@ window.onload = function() {
         if (Igrac.Y>=visinaCanvasa||Igrac.Y<-visinaCanvasa) return true;
         //je li me duh pojeo
         if(naDuhuSam===false) //ako sam na duhu, ne moram provjeravat
-            if(Math.abs((Igrac.Y+Igrac.polaVisine)-(Duh.Y+Duh.polaVisine))<(Duh.visina+Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.polaSirine)-(Duh.X+Duh.polaSirine))<(Duh.sirina+Igrac.sirina)/3) return true; // dodiruju se već kad je <blabla/2 ali u igri to loše izgleda jer slike igraca i duha nisu pravokutnici
+            if(Math.abs((Igrac.Y+Igrac.visina/2)-(Duh.Y+Duh.visina/2))<(Duh.visina+Igrac.visina)/3 && Math.abs((Igrac.X+Igrac.sirina/2)-(Duh.X+Duh.sirina/2))<(Duh.sirina+Igrac.sirina)/3) return true; // dodiruju se već kad je <blabla/2 ali u igri to loše izgleda jer slike igraca i duha nisu pravokutnici
         return false;
     }
     function azuriraj() {
         //boost
-        if (dostupanBoostZaBrzinu) gumbZaBoostBrzina.style.display = 'block';
+        if (Boost.dostupanBoostZaBrzinu) gumbZaBoostBrzina.style.display = 'block';
         else gumbZaBoostBrzina.style.display = 'none';
-        if (dostupanBoostZaSkok) gumbZaBoostSkok.style.display = 'block';
+        if (Boost.dostupanBoostZaSkok) gumbZaBoostSkok.style.display = 'block';
         else gumbZaBoostSkok.style.display = 'none';
-        if (dostupanSkokIzNiceg) gumbZaSkokIzNiceg.style.display = 'block';
+        if (Boost.dostupanSkokIzNiceg) gumbZaSkokIzNiceg.style.display = 'block';
         else gumbZaSkokIzNiceg.style.display = 'none';
-        boostZaBrzinuTrajeJos--;
-        boostZaSkokTrajeJos--;
-        if(Duh.ubrzavaTimerZaPoruku!==0)Duh.ubrzavaTimerZaPoruku--;
+        Boost.boostZaBrzinuTrajeJos--;
+        Boost.boostZaSkokTrajeJos--;
+        if(Duh.timerZaPorukuDaUbrzava!==0)Duh.timerZaPorukuDaUbrzava--;
         //platforme
         miciVodoravnePlatforme();
         miciOkomitePlatforme();  
@@ -609,17 +695,19 @@ window.onload = function() {
             else if( rezultat>parseInt(cookieZaRezultat)) setCookie('rezultat',String(rezultat));
         }
         //zvjezdice i bonusi
+        animirajIgraca();
         jeZvjezdicaSkupljena();
+        animirajZvjezdicu();
         if (rezultat%2000===500){ //duh se ubrzava sa bodovima
-            Duh.ubrzavaTimerZaPoruku=100;
+            Duh.timerZaPorukuDaUbrzava=100;
             rezultat+=100;
             efektZaPozadinu=0;
             Duh.Dx+=0.05;
             Duh.Dy+=0.05;
         }
         brojacKadrova=++brojacKadrova%5000;
-        if(brojacKadrova===2500) bonusAktivan=true;
-        if (bonusAktivan) jeBonusSkupljen();
+        if(brojacKadrova===2500) Boost.bonusAktivan=true;
+        if (Boost.bonusAktivan) jeBonusSkupljen();
         //crtanje
         nacrtaj();
         if(!Igrac.mrtav&&!paused)requestAnimationFrame(azuriraj);
@@ -793,7 +881,7 @@ window.onload = function() {
             else setCookie('brzinaDuha','hard',30);
             if(skin==='notSoNormalSkin/')setCookie('skin','notSoNormalSkin/',30);
             else setCookie('skin','normalSkin/',30);
-            if(diraoSkin)location.reload();
+            if(diraoSkin) postaviNaPocetneVrijednosti();
         } ;  
         //obojaj pozadinu
         obojajPozadinu();
@@ -861,6 +949,10 @@ window.onload = function() {
         gumbZaSkokIzNiceg.style.display = 'none';
         gumbZaZvuk.style.display='none';  
         gumbMenu.style.display='none'; 
+        if(!gyro){
+            kontrolaDesno.parentNode.removeChild(kontrolaDesno);
+            kontrolaLijevo.parentNode.removeChild(kontrolaLijevo);
+        }
     }
     function makniGumbeZaMeni(){
         gumbPocni.style.display = 'none';
